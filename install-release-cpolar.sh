@@ -207,23 +207,31 @@ get_version() {
   # 1: Installed or no new version of Cpolar.
   # 2: Install the specified version of Cpolar.
 
-  RELEASE_VERSION="3.2.82"
 
-  return 0
 
   if [[ -n "$VERSION" ]]; then
-    RELEASE_VERSION="v${VERSION#v}"
+    RELEASE_VERSION="${VERSION#v}"
     return 2
   fi
   # Determine the version number for Cpolar installed from a local file
   if [[ -f '/usr/local/bin/cpolar' ]]; then
-    VERSION="$(/usr/local/bin/cpolar version | awk 'NR==1 {print $2}')"
-    CURRENT_VERSION="v${VERSION#v}"
+    VERSION="$(/usr/local/bin/cpolar version | awk 'NR==1 {print $3}')"
+    CURRENT_VERSION="$VERSION"
     if [[ "$LOCAL_INSTALL" -eq '1' ]]; then
       RELEASE_VERSION="$CURRENT_VERSION"
       return
     fi
   fi
+
+  RELEASE_VERSION="3.2.82"
+
+  if [[ "$RELEASE_VERSION" == "$CURRENT_VERSION" ]]; then
+    return 1
+  fi
+
+  return 0
+
+
   # Get Cpolar release version number
   TMP_FILE="$(mktemp)"
   if ! curl -x "${PROXY}" -sS -H "Accept: application/vnd.github.v3+json" -o "$TMP_FILE" 'https://api.cpolar.com/v1/Updates'; then
@@ -459,7 +467,7 @@ check_update() {
     if [[ "$get_ver_exit_code" -eq '0' ]]; then
       echo "info: Found the latest release of Cpolar $RELEASE_VERSION . (Current release: $CURRENT_VERSION)"
     elif [[ "$get_ver_exit_code" -eq '1' ]]; then
-      echo "info: No new version. The current version of Cpolar is $CURRENT_VERSION ."
+      echo "info: No new version. The current version of Cpolar is v$CURRENT_VERSION ."
     fi
     exit 0
   else
@@ -472,8 +480,9 @@ remove_cpolar() {
   if systemctl list-unit-files | grep -qw 'cpolar'; then
     if [[ -n "$(pidof cpolar)" ]]; then
       stop_cpolar
+      systemctl disable cpolar
     fi
-    if ! ("rm" -r '/usr/local/bin/cpolar' \
+    if ! ("rm" -rf '/usr/local/bin/cpolar' \
       '/usr/bin/cpolar' \
       '/etc/systemd/system/cpolar.service' \
       '/etc/systemd/system/cpolar@.service' \
@@ -558,7 +567,7 @@ main() {
       install_software 'unzip' 'unzip'
       decompression "$ZIP_FILE"
     elif [[ "$NUMBER" -eq '1' ]]; then
-      echo "info: No new version. The current version of Cpolar is $CURRENT_VERSION ."
+      echo "info: No new version. The current version of Cpolar is v$CURRENT_VERSION ."
       exit 0
     fi
   fi

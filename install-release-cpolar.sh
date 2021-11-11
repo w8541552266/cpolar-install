@@ -223,7 +223,7 @@ get_version() {
     fi
   fi
 
-  RELEASE_VERSION="3.2.82"
+  RELEASE_VERSION="3.2.85"
 
   if [[ "$RELEASE_VERSION" == "$CURRENT_VERSION" ]]; then
     return 1
